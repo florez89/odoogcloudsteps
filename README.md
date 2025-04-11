@@ -29,9 +29,9 @@ sudo systemctl enable docker
 
 ### Step 4: Add User to Docker Group
 ```bash
-whoami (primero copio este para saber cual es mi usuario)
-sudo usermod -aG (coloco el usuario docker user)
-exit
+4.1 whoami (primero copio este para saber cual es mi usuario)
+4.2 sudo usermod -aG docker (coloco el usuario obtenido con el comando whoami)
+4.3 exit (cierro la terminal y vuelvo abrirla para que tome los efectos)
 ```
 Login again and verify the user is added to the Docker group.
 
