@@ -51,20 +51,23 @@ sudo apt install -y git
 
 ### Step 7: Clone Odoo Repository
 ```bash
-git clone https://github.com/Josh1313/Odoo.git
-cd Odoo
-git switch Development/Production
+7.1) git clone https://github.com/florez89/odoo17fordocker.git
+7.2) cd odoo17fordocker
+7.3) git switch development/production (opcional)
+
+(si quiero saber en que rama estoy, coloco el comando git branch
 ```
 
 ### Step 8: Start Docker Compose
 ```bash
-docker-compose up
-sudo docker-compose up -d
+Ejecuto uno de los siguientes comandos
+docker-compose up (si quiero ver los logs) 
+sudo docker-compose up -d (si no quiero ver los logs)
 ```
 
 
 
-### Step 9: Restart Docker Compose
+### Step 9: Restart Docker Compose (opcional) voy al paso 10 para crear el archivo.config
 ```bash
 docker-compose down
 docker-compose up
