@@ -94,7 +94,7 @@ quita este error: ![image](https://github.com/user-attachments/assets/de971575-4
 
 ---
 
-### Step 11: Install Certbot and Nginx
+### Step 11: Install Nginx
 ```bash
 sudo apt install -y nginx
 
@@ -144,7 +144,7 @@ sudo systemctl restart nginx
 luego de esto dejo de ver el mensaje por defecto de nginx y muestra la pagina de inicio de sesion de odoo
 ```
 
-### Step 15: Set Up SSL with Certbot
+### Step 15:Install Certbot and Set Up SSL with Certbot
 ```bash
 15.1) sudo apt install certbot python3-certbot-nginx -y
 15.2) sudo certbot --nginx -d YOUR-DOMAIN-NAME
