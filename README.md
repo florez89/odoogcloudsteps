@@ -85,17 +85,20 @@ admin_passwd = admin
 db_host = db
 db_port = 5432
 db_user = odoo
-db_password = datapathfinder
+db_password = odoo (esta clave esta en el archivo odoo pass de https://github.com/florez89/odoo17fordocker)
 proxy_mode = True
 ```
 Save and exit with `CTRL+O`, `ENTER`, `CTRL+X`.
+quita este error: ![image](https://github.com/user-attachments/assets/de971575-42d9-4535-acfc-d356332bb723)
+
 
 ---
 
 ### Step 11: Install Certbot and Nginx
 ```bash
-sudo apt install certbot python3-certbot-nginx -y
 sudo apt install -y nginx
+
+compruebo entrando a midominio.com y me debe salir el mensaje por defecto de nginx
 ```
 
 ### Step 12: Configure Nginx for Odoo
@@ -131,26 +134,31 @@ Save and exit with `CTRL+O`, `ENTER`, `CTRL+X`.
 
 ### Step 13: Enable Nginx Site and Test Configuration
 ```bash
-sudo ln -s /etc/nginx/sites-available/Odoo /etc/nginx/sites-enabled/
-sudo nginx -t
+13.1) sudo ln -s /etc/nginx/sites-available/Odoo /etc/nginx/sites-enabled/
+13.2) sudo nginx -t
 ```
 ### Step 14: Restart Nginx
 ```bash
 sudo systemctl restart nginx
+
+luego de esto dejo de ver el mensaje por defecto de nginx y muestra la pagina de inicio de sesion de odoo
 ```
 
 ### Step 15: Set Up SSL with Certbot
 ```bash
-sudo certbot --nginx -d YOUR-DOMAIN-NAME
+15.1) sudo apt install certbot python3-certbot-nginx -y
+15.2) sudo certbot --nginx -d YOUR-DOMAIN-NAME
 ```
 
 ### Step 16: Restart Nginx
 ```bash
 sudo systemctl restart nginx
 ```
-
+ya puedo abrir la pagina modo seguro
 
 ### TESTING: YOUR APP
 ```bash
-http://<your-domain>:9069
+http://<your-domain>:9069 (en el paso 8)
+
+despues del paso 14 ya puedo entrar a la pagina de inicio de sesion de odoo en midominio.com
 ```
