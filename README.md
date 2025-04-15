@@ -241,6 +241,19 @@ server {
 }
 
 
+### Step 18: Ingresar al log 
+
+Inicio putty
+Acceder al contenedor: docker exec -it odoo17fordocker-web-1 bash
+
+Usar tail -f para ver el log: tail -f /var/log/odoo/odoo.log
+
+para saber el nombre del contenedor ejecuro el comando: docker ps
+
+son estos: 
+![image](https://github.com/user-attachments/assets/314deca8-5878-460a-bb33-cabc109e8326)
+
+
 ### TESTING: YOUR APP
 ```bash
 http://<your-domain>:9069 (en el paso 8)
