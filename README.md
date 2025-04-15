@@ -85,8 +85,11 @@ admin_passwd = admin
 db_host = db
 db_port = 5432
 db_user = odoo
-db_password = odoo (esta clave esta en el archivo odoo pass de https://github.com/florez89/odoo17fordocker)
+db_password = odoo
 proxy_mode = True
+logfile = /var/log/odoo/odoo.log
+log_level = debug
+
 ```
 Save and exit with `CTRL+O`, `ENTER`, `CTRL+X`.
 quita este error: ![image](https://github.com/user-attachments/assets/de971575-42d9-4535-acfc-d356332bb723)
