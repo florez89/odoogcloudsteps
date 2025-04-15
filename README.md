@@ -130,6 +130,33 @@ server {
     }
 }
 ```
+```
+Version más completa:
+
+server {
+    listen 80;
+    server_name accit.online www.accit.online;
+
+    location / {
+        proxy_pass http://localhost:9069;
+        proxy_http_version 1.1;
+        chunked_transfer_encoding off;
+        proxy_buffering off;
+        proxy_cache off;
+
+        # Headers for WebSocket support
+        proxy_set_header Connection 'Upgrade';
+        proxy_set_header Upgrade $http_upgrade;
+
+        # Additional headers for forwarding client info
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
 Save and exit with `CTRL+O`, `ENTER`, `CTRL+X`.
 
 ### Step 13: Enable Nginx Site and Test Configuration
@@ -156,9 +183,69 @@ sudo systemctl restart nginx
 ```
 ya puedo abrir la pagina modo seguro
 
+
+### Step 17: Restart Nginx
+
+reemplazo el config de Nginx por esta así no queda en bucle la app web por redirección dominio:
+
+# 🔁 Redirección de HTTP a HTTPS
+server {
+    listen 80;
+    server_name accit.online www.accit.online;
+
+    if ($host = www.accit.online) {
+        return 301 https://$host$request_uri;
+    }
+
+    if ($host = accit.online) {
+        return 301 https://$host$request_uri;
+    }
+
+    return 301 https://$host$request_uri;
+}
+
+# 🔁 Definición de upstream para Odoo
+upstream odoo {
+    server 127.0.0.1:9069 weight=1 fail_timeout=0;
+}
+
+# 🔒 Configuración HTTPS con proxy hacia Odoo
+server {
+    listen 443 ssl;
+    server_name accit.online www.accit.online;
+
+    ssl_certificate /etc/letsencrypt/live/accit.online/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/accit.online/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+    location / {
+        proxy_pass http://odoo;
+
+        # Encabezados para WebSocket y proxy reverso
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_buffering off;
+        proxy_cache off;
+        chunked_transfer_encoding off;
+    }
+}
+
+
 ### TESTING: YOUR APP
 ```bash
 http://<your-domain>:9069 (en el paso 8)
 
 despues del paso 14 ya puedo entrar a la pagina de inicio de sesion de odoo en midominio.com
 ```
+
+
