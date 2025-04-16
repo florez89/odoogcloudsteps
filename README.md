@@ -88,7 +88,7 @@ db_user = odoo
 db_password = odoo
 proxy_mode = True
 logfile = /var/log/odoo/odoo.log
-log_level = debug
+log_level = debug # (esto es opcional, porque coloca mucha informacion)
 
 ```
 Save and exit with `CTRL+O`, `ENTER`, `CTRL+X`.
@@ -191,7 +191,7 @@ ya puedo abrir la pagina modo seguro
 
 reemplazo el config de Nginx por esta así no queda en bucle la app web por redirección dominio:
 
-# 🔁 Redirección de HTTP a HTTPS
+\# 🔁 Redirección de HTTP a HTTPS
 server {
     listen 80;
     server_name accit.online www.accit.online;
@@ -207,12 +207,12 @@ server {
     return 301 https://$host$request_uri;
 }
 
-# 🔁 Definición de upstream para Odoo
+\# 🔁 Definición de upstream para Odoo
 upstream odoo {
     server 127.0.0.1:9069 weight=1 fail_timeout=0;
 }
 
-# 🔒 Configuración HTTPS con proxy hacia Odoo
+\# 🔒 Configuración HTTPS con proxy hacia Odoo
 server {
     listen 443 ssl;
     server_name accit.online www.accit.online;
@@ -225,7 +225,7 @@ server {
     location / {
         proxy_pass http://odoo;
 
-        # Encabezados para WebSocket y proxy reverso
+       \# Encabezados para WebSocket y proxy reverso
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
