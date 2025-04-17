@@ -256,6 +256,138 @@ para saber el nombre del contenedor ejecuro el comando: docker ps
 son estos: 
 ![image](https://github.com/user-attachments/assets/314deca8-5878-460a-bb33-cabc109e8326)
 
+### Step 19: agregar un dominio adicional: caso, academiago.online
+
+✅ Paso 1: Configurar dbfilter en el contenedor Odoo
+Abrí el archivo odoo.conf, que en tu instalación está en:
+
+./config/odoo.conf
+
+Y reemplazá la línea (o agregá si no está):
+
+dbfilter = ^%d$
+
+Esto significa que Odoo va a buscar bases de datos que coincidan con el subdominio o dominio usado en la URL. Ejemplos:
+
+Si entrás a academiago.online 👉 solo cargará la base academiago.
+
+Si entrás a accit.online 👉 solo cargará la base accit.
+
+✅ Paso 2 (opcional): Permitir múltiples bases desde un dominio
+Si querés que accit.online tenga acceso a todas las bases, se puede hacer una ligera modificación. Usá esta configuración:
+
+dbfilter = ^%d$|^accit$
+
+Con esto:
+
+academiago.online 👉 solo podrá acceder a academiago
+
+accit.online 👉 podrá acceder a todas las bases, incluyendo accit y academiago
+
+También podés directamente quitar el dbfilter y dejarlo solo en la configuración de Nginx como te muestro abajo, si querés más flexibilidad.
+
+- Pregunta a chat gpt: no deberia crear una carpeta en /etc/nginx/sites-available/ para academiago y mantener la de accit en sudo nano /etc/nginx/sites-available/Odoo?
+  ¡Buena pregunta! Y sí, es una práctica totalmente válida (y recomendable) separar la configuración de cada dominio en archivos distintos dentro de /etc/nginx/sites-available/.
+
+  ✅ ¿Por qué separar cada dominio en un archivo?
+Separar la configuración de Nginx en archivos individuales por dominio te da:
+
+Mejor organización: cada archivo se enfoca en un sitio específico (accit.online, academiago.online, etc.).
+
+Facilidad de mantenimiento: si tenés que hacer cambios en un dominio, no afectás a los demás.
+
+Escalabilidad: cuando tu servidor aloja muchos dominios (multisite), es más limpio y controlado.
+
+🛠 Cómo hacerlo:
+1. Dejás el archivo actual como Odoo para accit.online
+sudo nano /etc/nginx/sites-available/Odoo
+
+2. Creás uno nuevo para academiago.online
+sudo nano /etc/nginx/sites-available/academiago
+Y dentro de ese archivo pegás algo como esto:
+server {
+    listen 80;
+    server_name academiago.online www.academiago.online;
+
+    location / {
+        proxy_pass http://localhost:9069;
+        proxy_http_version 1.1;
+        chunked_transfer_encoding off;
+        proxy_buffering off;
+        proxy_cache off;
+
+        # Headers for WebSocket support
+        proxy_set_header Connection 'Upgrade';
+        proxy_set_header Upgrade $http_upgrade;
+
+        # Additional headers for forwarding client info
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+3. Activás el nuevo sitio
+sudo ln -s /etc/nginx/sites-available/academiago /etc/nginx/sites-enabled/
+4. Verificás y reiniciás
+sudo nginx -t
+sudo systemctl restart nginx
+5. instalo ssl certbort (en este paso no ejecuto  sudo apt install certbot python3-certbot-nginx -y porque ya hice esa intalación en accit.online)
+   sudo certbot --nginx -d academiago.online -d www.academiago.online
+6. sudo systemctl restart nginx
+
+si queda en blucle la app pongo este archivo en la config de nginx mas completo:
+
+reemplazo el config de Nginx por esta así no queda en bucle la app web por redirección dominio:
+
+# 🔁 Redirección de HTTP a HTTPS server { listen 80; server_name accit.online www.accit.online;
+
+if ($host = www.accit.online) {
+    return 301 https://$host$request_uri;
+}
+
+if ($host = accit.online) {
+    return 301 https://$host$request_uri;
+}
+
+return 301 https://$host$request_uri;
+}
+
+# 🔁 Definición de upstream para Odoo upstream odoo { server 127.0.0.1:9069 weight=1 fail_timeout=0; }
+
+# 🔒 Configuración HTTPS con proxy hacia Odoo server { listen 443 ssl; server_name accit.online www.accit.online;
+
+ssl_certificate /etc/letsencrypt/live/accit.online/fullchain.pem; # managed by Certbot
+ssl_certificate_key /etc/letsencrypt/live/accit.online/privkey.pem; # managed by Certbot
+include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+location / {
+    proxy_pass http://odoo;
+
+   \# Encabezados para WebSocket y proxy reverso
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Port $server_port;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    proxy_buffering off;
+    proxy_cache off;
+    chunked_transfer_encoding off;
+}
+}
+
+NOTA: donde salga accit.online, debo colocar academiago.online
+para que tome cambio los cambios en odoo.config, debo ejecutar: docker-compose restart
+
+Nota: la diferencia entre docker-compose restart y docker-compose down docker-compose up, es que docker-compose restart reinicia el contenedor, y con la otra vuelve hacer un reload de yaml y hace cambios en los contendores. Este ultimo caso es si se hace cambios en el yaml
 
 ### TESTING: YOUR APP
 ```bash
