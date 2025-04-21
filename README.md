@@ -389,6 +389,364 @@ para que tome cambio los cambios en odoo.config, debo ejecutar: docker-compose r
 
 Nota: la diferencia entre docker-compose restart y docker-compose down docker-compose up, es que docker-compose restart reinicia el contenedor, y con la otra vuelve hacer un reload de yaml y hace cambios en los contendores. Este ultimo caso es si se hace cambios en el yaml
 
+
+Como solucione el bucle web en academiago.online?
+
+PD: use la misma config de accit.online solo reemplazando los nombre y dio errores:
+
+acomode el archivo nginx de academiago como lo tenía en accit, ya que al instalar el modulo web de odoo quedaba en bucle. La configuración que coloque es:
+
+"
+# 🔁 Redirección de HTTP a HTTPS server { listen 80; server_name academiago.online www.academiago.online;
+
+if ($host = www.academiago.online) {
+    return 301 https://$host$request_uri;
+}
+
+if ($host = academiago.online) {
+    return 301 https://$host$request_uri;
+}
+
+return 301 https://$host$request_uri;
+}
+
+# 🔁 Definición de upstream para Odoo upstream odoo { server 127.0.0.1:9069 weight=1 fail_timeout=0; }
+
+# 🔒 Configuración HTTPS con proxy hacia Odoo server { listen 443 ssl; server_name academiago.online www.academiago.online;
+
+ssl_certificate /etc/letsencrypt/live/academiago.online/fullchain.pem; # managed by Certbot
+ssl_certificate_key /etc/letsencrypt/live/academiago.online/privkey.pem; # managed by Certbot
+include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+location / {
+    proxy_pass http://odoo;
+
+   \# Encabezados para WebSocket y proxy reverso
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Port $server_port;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    proxy_buffering off;
+    proxy_cache off;
+    chunked_transfer_encoding off;
+}
+}
+"
+
+me da los siguientes errores:
+"
+
+root@vmi2550185:~# sudo nginx -t
+nginx: [warn] duplicate value "TLSv1.2" in /etc/letsencrypt/options-ssl-nginx.conf:11
+nginx: [warn] duplicate value "TLSv1.3" in /etc/letsencrypt/options-ssl-nginx.conf:11
+nginx: [emerg] "ssl_prefer_server_ciphers" directive is duplicate in /etc/letsencrypt/options-ssl-nginx.conf:12
+nginx: configuration file /etc/nginx/nginx.conf test failed
+"
+ayudame a solucionarlo e indicame porque el error?
+
+
+ChatGPT Plus
+Gracias por compartir la configuración. El error que te da Nginx tiene que ver con la inclusión duplicada de parámetros SSL en /etc/letsencrypt/options-ssl-nginx.conf, que ya define directivas como:
+
+ssl_protocols TLSv1.2 TLSv1.3;
+
+ssl_prefer_server_ciphers on;
+
+🔍 ¿Qué significa el error?
+Nginx te dice que estás repitiendo configuraciones SSL, en particular:
+
+vbnet
+Copiar
+Editar
+nginx: [warn] duplicate value "TLSv1.2"
+nginx: [warn] duplicate value "TLSv1.3"
+nginx: [emerg] "ssl_prefer_server_ciphers" directive is duplicate
+Esto sucede cuando:
+
+Ya están definidas esas directivas dentro de options-ssl-nginx.conf (archivo de configuración generado por Certbot).
+
+Y también las estás declarando manualmente en tu archivo de sitio (academiago) o en otro lugar (como nginx.conf).
+
+✅ Solución
+Lo más común y limpio es no repetir ninguna directiva SSL si ya incluyes options-ssl-nginx.conf. Ese archivo ya tiene todo lo necesario. Por lo tanto:
+
+🔧 Revisa tu archivo /etc/nginx/sites-available/academiago y asegúrate de que NO estás agregando extra SSL settings como estos:
+
+nginx
+Copiar
+Editar
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers on;
+Y que solo estés incluyendo esta línea:
+
+nginx
+Copiar
+Editar
+include /etc/letsencrypt/options-ssl-nginx.conf;
+📦 Recomendación
+Ya que estás usando Certbot, la configuración ideal sería así (te la reescribo limpia y sin errores):
+
+nginx
+Copiar
+Editar
+\# 🔁 Redirección HTTP → HTTPS
+server {
+    listen 80;
+    server_name academiago.online www.academiago.online;
+
+    if ($host = www.academiago.online) {
+        return 301 https://$host$request_uri;
+    }
+
+    if ($host = academiago.online) {
+        return 301 https://$host$request_uri;
+    }
+
+    return 301 https://$host$request_uri;
+}
+
+\# 🔁 Upstream para odoo
+upstream odoo {
+    server 127.0.0.1:9069 fail_timeout=0;
+}
+
+\# 🔒 HTTPS con Certbot
+server {
+    listen 443 ssl;
+    server_name academiago.online www.academiago.online;
+
+    ssl_certificate /etc/letsencrypt/live/academiago.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/academiago.online/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://odoo;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_buffering off;
+        proxy_cache off;
+        chunked_transfer_encoding off;
+    }
+}
+🧪 Luego de hacer los cambios:
+Guarda el archivo (CTRL + O, luego ENTER y CTRL + X si estás usando nano).
+
+Verifica la configuración:
+
+bash
+Copiar
+Editar
+sudo nginx -t
+Si no hay errores, recarga Nginx:
+
+bash
+Copiar
+Editar
+sudo systemctl reload nginx
+¿Querés que revise también si tenés esas directivas duplicadas en /etc/nginx/nginx.conf por si acaso?
+
+
+
+
+
+
+
+Tú dijiste:
+
+root@vmi2550185:~# sudo nginx -t
+nginx: [emerg] duplicate upstream "odoo" in /etc/nginx/sites-enabled/academiago:18
+nginx: configuration file /etc/nginx/nginx.conf test failed
+root@vmi2550185:~#
+
+
+ChatGPT Plus
+¡Perfecto, gracias por el dato! El nuevo error es muy claro:
+
+duplicate upstream "odoo"
+
+Esto significa que ya definiste una sección upstream odoo en otro archivo (probablemente en el archivo de configuración de accit o en el archivo Odoo en /etc/nginx/sites-available/), y estás intentando volver a definir el mismo nombre (odoo) en academiago.
+
+🛠️ ¿Cómo lo solucionás?
+Tienes dos opciones simples:
+
+✅ Opción 1: Usar un nombre diferente para el upstream
+Renombrá el bloque upstream en academiago por otro nombre, por ejemplo odoo_academiago:
+
+nginx
+Copiar
+Editar
+\# 🔁 Upstream para odoo (nombre único)
+upstream odoo_academiago {
+    server 127.0.0.1:9069 fail_timeout=0;
+}
+Y luego cambiá el proxy_pass dentro del location /:
+
+nginx
+Copiar
+Editar
+proxy_pass http://odoo_academiago;
+✅ Opción 2: No uses el bloque upstream y pasá directamente la IP
+Si no necesitás configurar varios servidores o balanceo, podés simplificar y no usar upstream, así:
+
+nginx
+Copiar
+Editar
+location / {
+    proxy_pass http://127.0.0.1:9069;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Port $server_port;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    proxy_buffering off;
+    proxy_cache off;
+    chunked_transfer_encoding off;
+}
+✅ Paso final:
+Después de hacer uno de estos cambios:
+
+Guardá el archivo.
+
+Verificá la configuración:
+
+bash
+Copiar
+Editar
+sudo nginx -t
+Si todo OK:
+
+bash
+Copiar
+Editar
+sudo systemctl reload nginx
+¿Querés que te prepare la versión corregida con nombre de upstream distinto (odoo_academiago) o la simplificada sin upstream?
+
+
+
+
+
+
+
+Tú dijiste:
+ese error se debera porque en accit lo tengo asi?
+"
+\# 🔁 Redirección de HTTP a HTTPS 
+server { listen 80; server_name accit.online www.accit.online;
+
+if ($host = www.accit.online) {
+    return 301 https://$host$request_uri;
+}
+
+if ($host = accit.online) {
+    return 301 https://$host$request_uri;
+}
+
+return 301 https://$host$request_uri;
+}
+
+\# 🔁 Definición de upstream para Odoo upstream odoo { server 127.0.0.1:9069 weight=1 fail_timeout=0; }
+
+\# 🔒 Configuración HTTPS con proxy hacia Odoo server { listen 443 ssl; server_name accit.online www.accit.online;
+
+ssl_certificate /etc/letsencrypt/live/accit.online/fullchain.pem; # managed by Certbot
+ssl_certificate_key /etc/letsencrypt/live/accit.online/privkey.pem; # managed by Certbot
+include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+location / {
+    proxy_pass http://odoo;
+
+   \# Encabezados para WebSocket y proxy reverso
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Port $server_port;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    proxy_buffering off;
+    proxy_cache off;
+    chunked_transfer_encoding off;
+}
+}
+"
+
+
+ChatGPT Plus
+¡Exactamente! 💡
+
+Ese error se debe 100% a que en tu archivo de configuración de accit ya definiste este bloque:
+
+nginx
+Copiar
+Editar
+upstream odoo {
+    server 127.0.0.1:9069 weight=1 fail_timeout=0;
+}
+Y luego, volvés a definirlo con el mismo nombre odoo en el archivo de configuración de academiago. Como Nginx carga todos los archivos desde sites-enabled/, no permite duplicados de upstream con el mismo nombre.
+
+✅ ¿Cómo se soluciona?
+Como dijimos antes, dos formas:
+
+✅ Opción rápida: cambiar el nombre del upstream en academiago
+nginx
+Copiar
+Editar
+\# en academiago
+upstream odoo_academiago {
+    server 127.0.0.1:9069 fail_timeout=0;
+}
+Y más abajo:
+
+nginx
+Copiar
+Editar
+proxy_pass http://odoo_academiago;
+✅ Opción simple: quitar upstream y usar la IP directamente en proxy_pass:
+nginx
+Copiar
+Editar
+proxy_pass http://127.0.0.1:9069;
+✅ Luego hacé:
+bash
+Copiar
+Editar
+sudo nginx -t
+sudo systemctl reload nginx
+Y ya te debería cargar todo bien 😎
+
+
+
 ### TESTING: YOUR APP
 ```bash
 http://<your-domain>:9069 (en el paso 8)
