@@ -341,7 +341,7 @@ si queda en blucle la app pongo este archivo en la config de nginx mas completo:
 
 reemplazo el config de Nginx por esta así no queda en bucle la app web por redirección dominio:
 
-# 🔁 Redirección de HTTP a HTTPS server { listen 80; server_name accit.online www.accit.online;
+\# 🔁 Redirección de HTTP a HTTPS server { listen 80; server_name accit.online www.accit.online;
 
 if ($host = www.accit.online) {
     return 301 https://$host$request_uri;
@@ -354,9 +354,9 @@ if ($host = accit.online) {
 return 301 https://$host$request_uri;
 }
 
-# 🔁 Definición de upstream para Odoo upstream odoo { server 127.0.0.1:9069 weight=1 fail_timeout=0; }
+\# 🔁 Definición de upstream para Odoo upstream odoo { server 127.0.0.1:9069 weight=1 fail_timeout=0; }
 
-# 🔒 Configuración HTTPS con proxy hacia Odoo server { listen 443 ssl; server_name accit.online www.accit.online;
+\# 🔒 Configuración HTTPS con proxy hacia Odoo server { listen 443 ssl; server_name accit.online www.accit.online;
 
 ssl_certificate /etc/letsencrypt/live/accit.online/fullchain.pem; # managed by Certbot
 ssl_certificate_key /etc/letsencrypt/live/accit.online/privkey.pem; # managed by Certbot
@@ -397,7 +397,7 @@ PD: use la misma config de accit.online solo reemplazando los nombre y dio error
 acomode el archivo nginx de academiago como lo tenía en accit, ya que al instalar el modulo web de odoo quedaba en bucle. La configuración que coloque es:
 
 "
-# 🔁 Redirección de HTTP a HTTPS server { listen 80; server_name academiago.online www.academiago.online;
+\# 🔁 Redirección de HTTP a HTTPS server { listen 80; server_name academiago.online www.academiago.online;
 
 if ($host = www.academiago.online) {
     return 301 https://$host$request_uri;
@@ -410,9 +410,9 @@ if ($host = academiago.online) {
 return 301 https://$host$request_uri;
 }
 
-# 🔁 Definición de upstream para Odoo upstream odoo { server 127.0.0.1:9069 weight=1 fail_timeout=0; }
+\# 🔁 Definición de upstream para Odoo upstream odoo { server 127.0.0.1:9069 weight=1 fail_timeout=0; }
 
-# 🔒 Configuración HTTPS con proxy hacia Odoo server { listen 443 ssl; server_name academiago.online www.academiago.online;
+\# 🔒 Configuración HTTPS con proxy hacia Odoo server { listen 443 ssl; server_name academiago.online www.academiago.online;
 
 ssl_certificate /etc/letsencrypt/live/academiago.online/fullchain.pem; # managed by Certbot
 ssl_certificate_key /etc/letsencrypt/live/academiago.online/privkey.pem; # managed by Certbot
