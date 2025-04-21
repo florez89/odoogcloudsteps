@@ -745,7 +745,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 Y ya te debería cargar todo bien 😎
 
-
+url de guia chatgpt caso academiago.online: https://chatgpt.com/c/68010a47-44d8-8009-a58e-c02bc20d1b83
 
 ### TESTING: YOUR APP
 ```bash
